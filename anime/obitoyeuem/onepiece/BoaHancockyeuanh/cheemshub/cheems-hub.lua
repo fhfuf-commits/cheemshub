@@ -1079,17 +1079,16 @@ spawn(function()
 	end
 end);
 v72:Toggle("NoSlide", _G.NoSlide, function(v556)
-	_G.NoSlide = v556;
-end);
+	_G.NoSlide = v556
+end)
+
 spawn(function()
-	while wait() do
+	while task.wait(0.2) do
 		if _G.NoSlide then
-			if game.Players.LocalPlayer.Character.Humanoid:GetState() == Enum.HumanoidStateType.Sliding then
-				game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-			end
 		end
 	end
-end);
+end)
+
 v72:Button("Reset Character", function()
 	game.Players.LocalPlayer.Character.Humanoid.Health = 0
 end);
@@ -1134,3 +1133,4 @@ spawn(function()
 end);
 v72:Seperator("Credits")
 v72:Label("You use it")
+
