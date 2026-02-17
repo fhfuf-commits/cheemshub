@@ -51,7 +51,7 @@ spawn(function()
 			v1867.Rotation = NumberRange.new(0);
 			v1867.Speed = NumberRange.new(0);
 			v1867.EmissionDirection = Enum.NormalId.Front;
-			v1867.SpeedRange = NumberRange.new(0);
+			v1867.Speed = NumberRange.new(0)
 			v1867.RotationSpeed = NumberRange.new(0);
 			if (v1867:IsA("Trail")) then
 				v1867.Enabled = false;
@@ -1133,4 +1133,5 @@ spawn(function()
 end);
 v72:Seperator("Credits")
 v72:Label("You use it")
+
 
