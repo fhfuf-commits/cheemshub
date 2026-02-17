@@ -41,24 +41,25 @@ spawn(function()
 	end
 end);
 spawn(function()
-	for v623, v624 in pairs(game:GetDescendants()) do
-		if (v624:IsA("ParticleEmitter") or v624:IsA("Trail")) then
-			v624.Lifetime = NumberRange.new(0);
-			v624.Rate = 0;
-			v624.LockedToPart = false;
-			local v1867 = v624;
-			v1867.VelocityInheritance = 0;
-			v1867.Rotation = NumberRange.new(0);
-			v1867.Speed = NumberRange.new(0);
-			v1867.EmissionDirection = Enum.NormalId.Front;
-			v1867.Speed = NumberRange.new(0)
-			v1867.RotationSpeed = NumberRange.new(0);
-			if (v1867:IsA("Trail")) then
-				v1867.Enabled = false;
-			end
+	for _, v in pairs(game:GetDescendants()) do
+		
+		if v:IsA("ParticleEmitter") then
+			v.Lifetime = NumberRange.new(0)
+			v.Rate = 0
+			v.LockedToPart = false
+			v.VelocityInheritance = 0
+			v.Rotation = NumberRange.new(0)
+			v.Speed = NumberRange.new(0)
+			v.EmissionDirection = Enum.NormalId.Front
+			v.RotationSpeed = NumberRange.new(0)
 		end
+		
+		if v:IsA("Trail") then
+			v.Enabled = false
+		end
+		
 	end
-end);
+end)
 spawn(function()
 	pcall(function()
 		while wait() do
@@ -1133,5 +1134,6 @@ spawn(function()
 end);
 v72:Seperator("Credits")
 v72:Label("You use it")
+
 
 
