@@ -1,39 +1,44 @@
--- [[ HỆ THỐNG BẢO MẬT ANTI-BAN (ĐÃ SỬA LỖI NGOẠI LỆ UI) ]] --
-pcall(function()
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
+-- [[ 1. ĐỢI GAME TẢI XONG ]] --
+repeat task.wait() until game:IsLoaded()
 
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
-
-        -- NGOẠI LỆ: Cho phép các lệnh từ UI chạy qua để không bị lỗi 'nil Notifications'
-        if self.Name == "Notification" or self.Name == "Main" or method == "GetChildren" then
-            return oldNamecall(self, ...)
-        end
-
-        -- CHỈ CHẶN: Các gói tin báo cáo thực sự nguy hiểm
-        if method == "FireServer" and (self.Name == "AdminPanel" or self.Name == "Report" or self.Name == "CombatFrameworkCheck") then
-            return nil
-        end
-
-        return oldNamecall(self, ...)
-    end)
-    setreadonly(mt, true)
-
-    -- Phát hiện Admin và tự thoát
-    game:GetService("Players").PlayerAdded:Connect(function(player)
-        if player:GetRankInGroup(2850137) >= 100 then 
-            game.Players.LocalPlayer:Kick("TBoy Roblox: Admin vào Server!")
-        end
-    end)
+-- [[ 2. TẢI GIAO DIỆN MIKASA TRƯỚC ]] --
+-- Chúng ta tải UI trước để hệ thống 'Notifications' của nó khởi tạo bình thường
+local success, result = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/fhfuf-commits/mikasa-hub/refs/heads/main/AOT/anime/obitoyeuem/onepiece/BoaHancockyeuanh/cheemshub/eren/mikasahub.lua"))()
 end)
 
--- Tải thư viện UI Mikasa Hub (Giao diện cũ bạn thích)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/fhfuf-commits/mikasa-hub/refs/heads/main/AOT/anime/obitoyeuem/onepiece/BoaHancockyeuanh/cheemshub/eren/mikasahub.lua"))()
+-- Đợi 3 giây để UI hiện lên hoàn tất rồi mới chạy Anti-ban
+task.wait(3)
 
--- Hàm hiện thông báo an toàn
+-- [[ 3. BẬT ANTI-BAN SAU KHI ĐÃ CÓ MENU ]] --
+if success then
+    pcall(function()
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        setreadonly(mt, false)
+
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            
+            -- CHỈ CHẶN: Các gói tin Admin/Report để bảo vệ bạn
+            if method == "FireServer" and (self.Name == "AdminPanel" or self.Name == "Report" or self.Name == "CombatFrameworkCheck") then
+                return nil
+            end
+
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end)
+end
+
+-- Tự thoát khi thấy Admin
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    if player:GetRankInGroup(2850137) >= 100 then 
+        game.Players.LocalPlayer:Kick("TBoy Roblox: Phát hiện Admin!")
+    end
+end)
+
+-- [[ 4. CÁC HÀM HỖ TRỢ ]] --
 local function Notify(text)
     pcall(function()
         local v0 = require(game:GetService("ReplicatedStorage").Notification)
@@ -41,29 +46,17 @@ local function Notify(text)
     end)
 end
 
--- Khởi tạo Window
-local Window = MakeWindow({
-    Hub = { Title = "cheems-hub PREMIUM", Animation = "cheems-hub: PREMIUM VIP" },
-    Key = { KeySystem = false, Keys = {"1234"} }
-})
-
-MinimizeButton({
-    Image = "rbxassetid://75707650621490",
-    Size = {60, 60},
-    Color = Color3.fromRGB(10, 10, 10),
-    Corner = true
-})
-
--- [[ LOGIC TỰ ĐỘNG HÓA FULL ]] --
 _G.AutoFarm = false
 _G.SelectWeapon = "Melee"
 
 function Tween(Pos)
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local dist = (Pos.Position - char.HumanoidRootPart.Position).Magnitude
-        game:GetService("TweenService"):Create(char.HumanoidRootPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
-    end
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local dist = (Pos.Position - char.HumanoidRootPart.Position).Magnitude
+            game:GetService("TweenService"):Create(char.HumanoidRootPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
+        end
+    end)
 end
 
 local function FastAttack()
@@ -92,7 +85,19 @@ local function GetQuestData(level)
     return nil
 end
 
------- Tab Giao Diện
+-- [[ 5. SETUP WINDOW (DÙNG LẠI CODE CŨ CỦA BẠN) ]] --
+local Window = MakeWindow({
+    Hub = { Title = "TBoy Roblox", Animation = "Youtube: TBoy Roblox" },
+    Key = { KeySystem = false, Keys = {"1234"} }
+})
+
+MinimizeButton({
+    Image = "rbxassetid://75707650621490",
+    Size = {60, 60},
+    Color = Color3.fromRGB(10, 10, 10),
+    Corner = true
+})
+
 local Tab1 = MakeTab({Name = "Auto Farm Level"})
 
 AddButton(Tab1, {
@@ -103,7 +108,7 @@ AddButton(Tab1, {
             Notify("Auto Farm: ĐÃ BẬT")
             spawn(function()
                 while _G.AutoFarm do
-                    task.wait()
+                    task.wait(0.1)
                     pcall(function()
                         local lp = game.Players.LocalPlayer
                         local q, n, m = GetQuestData(lp.Data.Level.Value)
@@ -115,7 +120,6 @@ AddButton(Tab1, {
                         end
 
                         if not lp.PlayerGui.Main.Quest.Visible then
-                            -- TỰ BAY ĐẾN NHẬN QUEST
                             local npc = game:GetService("Workspace").NPCs:FindFirstChild(n) or game:GetService("Workspace"):FindFirstChild(n, true)
                             if npc then
                                 if (npc:GetModelCFrame().Position - lp.Character.HumanoidRootPart.Position).Magnitude > 15 then
@@ -125,10 +129,12 @@ AddButton(Tab1, {
                                 end
                             end
                         else
-                            -- TỰ BAY ĐẾN ĐÁNH QUÁI
                             local enemy = nil
                             for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                                if v.Name == m and v.Humanoid.Health > 0 then enemy = v break end
+                                if v.Name == m and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then 
+                                    enemy = v 
+                                    break 
+                                end
                             end
 
                             if enemy then
@@ -150,7 +156,3 @@ AddButton(Tab1, {
         end
     end
 })
-        end
-    end
-})
-
