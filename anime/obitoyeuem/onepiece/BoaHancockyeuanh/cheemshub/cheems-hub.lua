@@ -1,51 +1,34 @@
 -- [[ 1. ĐỢI GAME TẢI XONG ]] --
 repeat task.wait() until game:IsLoaded()
+task.wait(1)
 
--- [[ 2. TẢI GIAO DIỆN MIKASA TRƯỚC ]] --
--- Chúng ta tải UI trước để hệ thống 'Notifications' của nó khởi tạo bình thường
+-- [[ 2. TẢI THƯ VIỆN UI MIKASA ]] --
 local success, result = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/fhfuf-commits/mikasa-hub/refs/heads/main/AOT/anime/obitoyeuem/onepiece/BoaHancockyeuanh/cheemshub/eren/mikasahub.lua"))()
 end)
 
--- Đợi 3 giây để UI hiện lên hoàn tất rồi mới chạy Anti-ban
-task.wait(3)
+if not success then
+    warn("Lỗi tải giao diện: " .. tostring(result))
+    return
+end
 
--- [[ 3. BẬT ANTI-BAN SAU KHI ĐÃ CÓ MENU ]] --
-if success then
+-- [[ 3. HÀM TỐI ƯU ĐÒN ĐÁNH (FAST ATTACK & HITBOX) ]] --
+-- Đoạn này giúp đứng trên cao vẫn đánh trúng quái bên dưới
+local function FastAttack()
     pcall(function()
-        local mt = getrawmetatable(game)
-        local oldNamecall = mt.__namecall
-        setreadonly(mt, false)
-
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            
-            -- CHỈ CHẶN: Các gói tin Admin/Report để bảo vệ bạn
-            if method == "FireServer" and (self.Name == "AdminPanel" or self.Name == "Report" or self.Name == "CombatFrameworkCheck") then
-                return nil
-            end
-
-            return oldNamecall(self, ...)
-        end)
-        setreadonly(mt, true)
+        local cf = require(game:GetService("Players").LocalPlayer.PlayerScripts.CombatFramework)
+        local controller = getupvalues(cf)[2]
+        if controller and controller.activeController then
+            -- Mở rộng tầm đánh để chạm tới quái khi đứng trên đầu
+            controller.activeController.hitboxMagnitude = 60 
+            -- Loại bỏ thời gian chờ giữa các đòn đánh
+            controller.activeController.timeToNextAttack = 0
+            controller.activeController:attack()
+        end
     end)
 end
 
--- Tự thoát khi thấy Admin
-game:GetService("Players").PlayerAdded:Connect(function(player)
-    if player:GetRankInGroup(2850137) >= 100 then 
-        game.Players.LocalPlayer:Kick("TBoy Roblox: Phát hiện Admin!")
-    end
-end)
-
--- [[ 4. CÁC HÀM HỖ TRỢ ]] --
-local function Notify(text)
-    pcall(function()
-        local v0 = require(game:GetService("ReplicatedStorage").Notification)
-        v0.new("<Color=Cyan> " .. text .. " <Color=/>"):Display()
-    end)
-end
-
+-- [[ 4. CẤU HÌNH FARM ]] --
 _G.AutoFarm = false
 _G.SelectWeapon = "Melee"
 
@@ -55,18 +38,6 @@ function Tween(Pos)
         if char and char:FindFirstChild("HumanoidRootPart") then
             local dist = (Pos.Position - char.HumanoidRootPart.Position).Magnitude
             game:GetService("TweenService"):Create(char.HumanoidRootPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = Pos}):Play()
-        end
-    end)
-end
-
-local function FastAttack()
-    pcall(function()
-        local cf = require(game:GetService("Players").LocalPlayer.PlayerScripts.CombatFramework)
-        local controller = getupvalues(cf)[2]
-        if controller and controller.activeController then
-            controller.activeController.hitboxMagnitude = 55
-            controller.activeController.timeToNextAttack = 0
-            controller.activeController:attack()
         end
     end)
 end
@@ -85,64 +56,61 @@ local function GetQuestData(level)
     return nil
 end
 
--- [[ 5. SETUP WINDOW (DÙNG LẠI CODE CŨ CỦA BẠN) ]] --
+-- [[ 5. TẠO GIAO DIỆN ]] --
 local Window = MakeWindow({
-    Hub = { Title = "TBoy Roblox", Animation = "Youtube: TBoy Roblox" },
+    Hub = { Title = "TBoy Roblox - FAST MODE", Animation = "Youtube: TBoy Roblox" },
     Key = { KeySystem = false, Keys = {"1234"} }
 })
 
-MinimizeButton({
-    Image = "rbxassetid://75707650621490",
-    Size = {60, 60},
-    Color = Color3.fromRGB(10, 10, 10),
-    Corner = true
-})
-
-local Tab1 = MakeTab({Name = "Auto Farm Level"})
+local Tab1 = MakeTab({Name = "Auto Farm"})
 
 AddButton(Tab1, {
-    Name = "Bật Auto Farm (Tự Động Nhận Quest & Bay)",
+    Name = "BẬT AUTO FARM (FAST ATTACK + ABOVE)",
     Callback = function()
         _G.AutoFarm = not _G.AutoFarm
         if _G.AutoFarm then
-            Notify("Auto Farm: ĐÃ BẬT")
             spawn(function()
                 while _G.AutoFarm do
-                    task.wait(0.1)
+                    task.wait() -- Chạy nhanh nhất có thể
                     pcall(function()
                         local lp = game.Players.LocalPlayer
+                        local char = lp.Character
                         local q, n, m = GetQuestData(lp.Data.Level.Value)
                         
                         -- Tự cầm vũ khí
-                        local tool = lp.Backpack:FindFirstChild(_G.SelectWeapon) or lp.Character:FindFirstChild(_G.SelectWeapon)
-                        if tool and not lp.Character:FindFirstChild(_G.SelectWeapon) then
-                            lp.Character.Humanoid:EquipTool(tool)
+                        local tool = lp.Backpack:FindFirstChild(_G.SelectWeapon) or char:FindFirstChild(_G.SelectWeapon)
+                        if tool and not char:FindFirstChild(_G.SelectWeapon) then
+                            char.Humanoid:EquipTool(tool)
                         end
 
                         if not lp.PlayerGui.Main.Quest.Visible then
+                            -- Bay đi nhận Quest
                             local npc = game:GetService("Workspace").NPCs:FindFirstChild(n) or game:GetService("Workspace"):FindFirstChild(n, true)
                             if npc then
-                                if (npc:GetModelCFrame().Position - lp.Character.HumanoidRootPart.Position).Magnitude > 15 then
+                                if (npc:GetModelCFrame().Position - char.HumanoidRootPart.Position).Magnitude > 15 then
                                     Tween(npc:GetModelCFrame())
                                 else
                                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", q, 1)
                                 end
                             end
                         else
+                            -- Tìm quái
                             local enemy = nil
                             for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-                                if v.Name == m and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then 
-                                    enemy = v 
-                                    break 
+                                if v.Name == m and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                    enemy = v break
                                 end
                             end
 
                             if enemy then
-                                if (enemy.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude > 300 then
+                                if (enemy.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude > 300 then
                                     Tween(enemy.HumanoidRootPart.CFrame * CFrame.new(0, 40, 0))
                                 else
-                                    lp.Character.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
+                                    -- ĐỨNG TRÊN ĐẦU QUÁI 10 ĐƠN VỊ
+                                    char.HumanoidRootPart.CFrame = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
                                     enemy.HumanoidRootPart.CanCollide = false
+                                    
+                                    -- KÍCH HOẠT ĐÁNH NHANH VÀ TẦM XA
                                     FastAttack()
                                     game:GetService("VirtualUser"):Button1Down(Vector2.new(50, 50))
                                 end
@@ -151,8 +119,6 @@ AddButton(Tab1, {
                     end)
                 end
             end)
-        else
-            Notify("Auto Farm: ĐÃ TẮT")
         end
     end
 })
